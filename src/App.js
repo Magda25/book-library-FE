@@ -6,10 +6,11 @@ import BookForm from './components/BookForm';
 function App() {
   const [books, setBooks] = useState([]);
   const [authors, setAuthors] = useState([]);
-
   const [search, setSearch] = useState('');
   const [authorFilter, setAuthorFilter] = useState('');
   const [sortBy, setSortBy] = useState('');
+  const [editingBook, setEditingBook] = useState(null);
+  const [editingAuthor, setEditingAuthor] = useState(null);
 
   useEffect(() => {
     api.get('/books').then(res => setBooks(res.data.data));
@@ -33,15 +34,46 @@ function App() {
 
   return (
     <div style={{ padding: '2rem' }}>
-        <AuthorForm onCreated={() => {
-          api.get('/authors').then(res => setAuthors(res.data.data));
-        }} />
+        
+        <AuthorForm
+          editingAuthor={editingAuthor}
+          onCancelEdit={() => setEditingAuthor(null)}
+          onCreated={() => api.get('/authors').then(res => setAuthors(res.data.data))}
+        />
 
         <BookForm
           authors={authors}
-          onCreated={() => {
-            api.get('/books').then(res => setBooks(res.data.data));
-          }} />
+          editingBook={editingBook}
+          onCreated={() => api.get('/books').then(res => setBooks(res.data.data))}
+          onCancelEdit={() => setEditingBook(null)}
+        />
+
+      <h2>📋 Authors</h2>
+        <ul>
+          {authors.map((author) => (
+            <li key={author.id}>
+              {author.name}
+              <button
+                onClick={() => setEditingAuthor(author)}
+                style={{ marginLeft: '1rem' }}
+              >
+                ✏️ Edit
+              </button>
+              <button
+                onClick={async () => {
+                  if (window.confirm(`Delete author "${author.name}"?`)) {
+                    await api.delete(`/authors/${author.id}`);
+                    const res = await api.get('/authors');
+                    setAuthors(res.data.data);
+                  }
+                }}
+                style={{ marginLeft: '0.5rem', color: 'red' }}
+              >
+                🗑 Delete
+              </button>
+            </li>
+          ))}
+        </ul>
 
       <h1>📚 Book Library</h1>
 
@@ -79,6 +111,22 @@ function App() {
             />
             <h3>{book.title}</h3>
             <p><strong>Author:</strong> {book.author?.name}</p>
+            
+            <div style={{ marginTop: '10px' }}>
+              <button onClick={() => setEditingBook(book)}>✏️ Edit</button>
+              <button
+                onClick={async () => {
+                  if (window.confirm(`Are you sure you want to delete "${book.title}"?`)) {
+                    await api.delete(`/books/${book.id}`);
+                    const res = await api.get('/books');
+                    setBooks(res.data.data);
+                  }
+                }}
+                style={{ marginLeft: '1rem', color: 'red' }}
+              >
+                🗑 Delete
+              </button>
+            </div>
           </div>
         ))}
       </div>
